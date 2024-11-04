@@ -1,6 +1,8 @@
 import codecs
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def data_compensate(tth_list, Intensity_list, tth_interval):
@@ -228,3 +230,77 @@ def TablePlot(df,outputPath,w,h):
     table.set_fontsize(14)
     plt.savefig(outputPath)
     return
+
+def show_fig(label, xaxis_min, xaxis_max, xaxis_step, Intensity, outputPath, flag):
+  if flag == 'tth':
+    xlabel = '2θ [deg.]'
+  elif flag == 'Qrlu':
+    xlabel = 'Q [r.l.u.]'
+  
+  if type(label) == int:
+    if label == 0.0:
+      title = 'Others'
+    elif label == 1.0:
+      title = 'QC'
+  else:
+    if type(label) == str:
+        title = label
+    else:
+       title = 'label: '+str(label)
+  xaxis = np.arange(xaxis_min, xaxis_max, xaxis_step)
+  fig = plt.figure(figsize=(9, 6))
+  fig, ax = plt.subplots()
+  ax.tick_params(labelleft=False)
+  plt.plot(xaxis, Intensity, zorder=1)
+  plt.title(title)
+  #plt.legend()
+  plt.rcParams['xtick.direction'] = 'in'
+  plt.rcParams['ytick.direction'] = 'in'
+  plt.xlabel(xlabel)
+  plt.ylabel('Intensity [a.u.]')
+  plt.savefig(outputPath)
+  return
+
+
+def save_training_data(label, xaxis_min, xaxis_max, xaxis_step, x_train, y_train, n_data, output_path, flag):
+  if flag == 'tth':
+    xlabel = '2θ [deg.]'
+  elif flag == 'Qrlu':
+    xlabel = 'Q [r.l.u.]'
+
+  xaxis = np.arange(xaxis_min, xaxis_max, xaxis_step)
+
+  #n_data = 6 # 表示するデータ数
+  row = 2 # 行数
+  col = 3 # 列数
+  fig, ax = plt.subplots(nrows=row, ncols=col,figsize=(8,6))
+
+  fig.suptitle("MNIST data-set")
+  for i in enumerate(range(len(x_train[:n_data]))):
+      _r = i//col
+      _c = i%col
+      ax[_r,_c].set_title(y_train[i], fontsize=16, color='white')
+      ax[_r,_c].show(x_train[i]) # 画像を表示
+
+  return
+
+def save_16plots(intensity_list, outputDir):
+  if len(intensity_list)!=16:
+     print('Error: Not enough data num., got %s data, expect 16 data'%(str(len(intensity_list))))
+     return
+  a = 0
+  fig, axs = plt.subplots(4, 4, figsize=(20,10))
+  plt.ylim(0, 1)
+  for i in range(4):
+    for j in range(4):
+      # if i==0 and j == 0:
+      #   continue
+      tths = np.arange(20,80,0.01)
+      plt.ylim(0, 1)
+      axs[i][j].plot(tths, intensity_list[a])
+      a+=1
+  try:
+    plt.savefig(outputDir+'/PXRD.png')
+  except:
+    pass
+  return
