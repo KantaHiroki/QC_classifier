@@ -25,7 +25,7 @@ def run(path_model, expt_data_path, output_path, extension='.txt', xaxis_min=20.
     len_path = len(expt_data_path)
     len_extension = len(extension)
     
-    prediction_num = screening(path_model, output_path, data_list, expt_data_path, extension)
+    screening(path_model, output_path, data_list, expt_data_path, extension)
     
     if flag_plot==True:
         for file in data_list:
@@ -33,7 +33,7 @@ def run(path_model, expt_data_path, output_path, extension='.txt', xaxis_min=20.
             utility.show_fig(file, xaxis_min, xaxis_max, xaxis_step, data_list[file][0], file_path+'/'+data_name+'.png', 'tth')
     else:
         pass
-    return prediction_num
+    return 
 
 def screening(path_model, output_path, patterns, expt_data_path, extension):
     len_path = len(expt_data_path)
