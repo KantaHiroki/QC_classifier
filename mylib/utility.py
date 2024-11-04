@@ -24,15 +24,13 @@ def data_compensate(tth_list, Intensity_list, tth_interval):
     return pattern_list
 
 
-def read_pattern_in_file(path_exptdata, file_path):
+def read_pattern_in_file(file_path, xaxis_min, xaxis_max, xaxis_step):
     tth_list = []
     Intensity_list = []
     try:
-        # f = open(file_path, 'r', encoding="utf-8")
         with codecs.open(file_path, 'r', encoding="utf-8") as f:
             lines = f.readlines()
     except:
-        # f = open(file_path, 'r', encoding="shift-jis")
         with codecs.open(file_path, 'r', encoding="shift-jis") as f:
             lines = f.readlines()
     for line in lines:
@@ -45,61 +43,44 @@ def read_pattern_in_file(path_exptdata, file_path):
             tth = float(line_list[0])
         except:
             continue
-        if 20 <= tth < 80:
+        if xaxis_min <= tth < xaxis_max:
             tth_list.append(tth)
             Intensity = float(line_list[1])
             Intensity_list.append(Intensity)
     f.close()
 
-    # print(file_path, len(Intensity_list))
-    if len(Intensity_list)<6000:
+    if len(Intensity_list)<int((xaxis_max-xaxis_min)/xaxis_step):
         tth_interval = tth_list[1]-tth_list[0]
         Intensity_list = data_compensate(tth_list, Intensity_list, tth_interval)
-    # if len(Intensity_list)!=6000:
-    #     return 'error1'
     return Intensity_list
 
 
-def data_download_from_list(path_exptdir, path_file_list):
+def data_download_from_list(path_exptdir, path_file_list, xaxis_min, xaxis_max, xaxis_step):
     files = {}
-    count_error = 0
     file_list = open(path_file_list, 'r', encoding="utf-8")
-    # print(path_exptdir+file_list.readlines()[1][:-1])
-    # len_file_list = len(file_list.readlines())
     for file_name in file_list.readlines():
         try:
             tth_list = []
             Intensity_list = []
-            # print(path_exptdir+file_name[:-1])
             f = open(path_exptdir+file_name[:-1], 'r', encoding="shift-jis")
-            #f = open(file_name, 'r')
-            #print(f.readlines()[300])
             for line in f.readlines():
-                # try:
-                    if line[0] == '*':
-                        continue
-                    elif line[0]=='#':
-                        continue
-                    line_list = line[:-1].split()
-                    tth = float(line_list[0])
-                    if 20 <= tth < 80:
-                        tth_list.append(tth)
-                        Intensity = float(line_list[1])
-                        Intensity_list.append(Intensity)
-                #except:
-                #    pass
+                if line[0] == '*':
+                    continue
+                elif line[0]=='#':
+                    continue
+                line_list = line[:-1].split()
+                tth = float(line_list[0])
+                if xaxis_min <= tth < xaxis_max:
+                    tth_list.append(tth)
+                    Intensity = float(line_list[1])
+                    Intensity_list.append(Intensity)
             f.close()
 
-            if len(Intensity_list)!=6000:
-                print("=============================")
-                print('Error! Please check the file. (%s)'%(file_name))
-                print("=============================")
-                # file_list.remove(file_name)
-                # count_error += 1
-                # print(count_error, '/', len_file_list, ', error / file')
-                # tth_interval = tth_list[1]-tth_list[0]
-                # Intensity_list = data_compensate(tth_list, Intensity_list, tth_interval)
-
+            if len(Intensity_list)!=int((xaxis_max-xaxis_min)/xaxis_step):
+                print("="*80)
+                print('Error! 2 theta step of this data in measurement not suppposed. (%s)'%(file_name))
+                print("="*80)
+               
             x_test = np.array([Intensity_list], np.float64)
             x_test = x_test-np.min(x_test, axis = 1).reshape(1, 1)
             x_test = x_test/np.max(x_test, axis = 1).reshape(1, 1)
@@ -107,29 +88,25 @@ def data_download_from_list(path_exptdir, path_file_list):
             x_test_ = x_test[..., tf.newaxis]
             files[file_name] = x_test_
         except:
-            print("=============================")
+            print("="*80)
             print('Error! Please check the file.')
             print(file_name)
-            print("=============================")
-            # file_list.remove(file_name)
-            # count_error += 1
-            # print(count_error, '/', len_file_list, ', error / file')
+            print("="*80)
+
     file_list.close()
     return files
 
-def data_download(path_exptdata, extension):
+def data_download(path_exptdata, extension, xaxis_min, xaxis_max, xaxis_step):
     files = {}
     extension_list = [extension, extension.upper()]
     for ext in extension_list:
         file_list = glob.glob(path_exptdata+'*'+ext)
-        len_file_list = len(file_list)
-        count_error = 0
         for file_name in tqdm.tqdm(file_list[:], desc='Data Download'):
             # try:
-                Intensity_list = read_pattern_in_file(path_exptdata, file_name)
+                Intensity_list = read_pattern_in_file(file_name, xaxis_min, xaxis_max, xaxis_step)
                 if Intensity_list=='error1':
                     print("="*80)
-                    print('Error! Please check data length, expect 6000 (%s)'%(file_name))
+                    print('Error! 2 theta step of this data in measurement not suppposed. (%s)'%(file_name))
                     print("="*80)
                     continue
                 x_test = np.array([Intensity_list], np.float64)
@@ -138,14 +115,6 @@ def data_download(path_exptdata, extension):
                 tf.keras.backend.set_floatx('float64')
                 x_test_ = x_test[..., tf.newaxis]
                 files[file_name] = x_test_
-            # except:
-            #     print("=============================")
-            #     print('Error! Please check the file.')
-            #     print(file_name[len(path_exptdata):])
-            #     print("=============================")
-            #     file_list.remove(file_name)
-            #     count_error += 1
-            #     print(count_error, '/', len_file_list, ', error / file')
     return files
 
 def result(predicts):
@@ -265,14 +234,6 @@ def show_fig(label, xaxis_min, xaxis_max, xaxis_step, Intensity, outputPath, fla
 
 
 def save_training_data(label, xaxis_min, xaxis_max, xaxis_step, x_train, y_train, n_data, output_path, flag):
-  if flag == 'tth':
-    xlabel = '2θ [deg.]'
-  elif flag == 'Qrlu':
-    xlabel = 'Q [r.l.u.]'
-
-  xaxis = np.arange(xaxis_min, xaxis_max, xaxis_step)
-
-  #n_data = 6 # 表示するデータ数
   row = 2 # 行数
   col = 3 # 列数
   fig, ax = plt.subplots(nrows=row, ncols=col,figsize=(8,6))
@@ -283,7 +244,6 @@ def save_training_data(label, xaxis_min, xaxis_max, xaxis_step, x_train, y_train
       _c = i%col
       ax[_r,_c].set_title(y_train[i], fontsize=16, color='white')
       ax[_r,_c].show(x_train[i]) # 画像を表示
-
   return
 
 def save_16plots(intensity_list, outputDir):
@@ -295,8 +255,6 @@ def save_16plots(intensity_list, outputDir):
   plt.ylim(0, 1)
   for i in range(4):
     for j in range(4):
-      # if i==0 and j == 0:
-      #   continue
       tths = np.arange(20,80,0.01)
       plt.ylim(0, 1)
       axs[i][j].plot(tths, intensity_list[a])

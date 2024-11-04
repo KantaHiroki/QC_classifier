@@ -5,14 +5,11 @@ import os
 import numpy as np
 import tqdm
 import tensorflow as tf
-import pandas as pd
+import sys
 from mylib import utility
 
+
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
-
-dic_wvl = {}
-dic_wvl['Cu_Ka'] = 1.54059
-
 
 def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max, xaxis_step, flag_plot):
     """
@@ -20,13 +17,6 @@ def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max
     """
 
     data_list = utility.data_download(expt_data_path, extension)
-
-    tf.keras.backend.clear_session()
-    try:
-       model = tf.keras.models.load_model(path_model, compile = False)
-    except OSError:
-       print("Failed to load model.")
-       sys.exit()
 
     file_path = expt_data_path+'/XRD_plot'
     if os.path.isdir('%s'%(file_path))==False:
@@ -37,19 +27,6 @@ def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max
     
     prediction_num = screening(path_model, output_path, data_list, xaxis_min, xaxis_max, xaxis_step, expt_data_path, extension)
     
-    # for data in data_list:
-    #   #print(model.predict(data_list[data]))
-    #   #prediction = result(model.predict(data_list[data]))
-    #   print('--------------------------------------------------------------------------------------------------')
-    #   print(data)
-    #   #print('Result: [iQC, 1/1AC, 2/1AC, Others] ==> ', prediction)
-    #   print('Result: [iQC, 1/1AC, 2/1AC, Others] ==> ', model.predict(data_list[data]))
-    #   print('--------------------------------------------------------------------------------------------------')
-    #   data_name = data[len_path:len(data)-len_extension]
-    #   show_fig(data_name, xaxis_min, xaxis_max, xaxis_step, data_list[data][0], file_path+'/'+data_name+'.png', flag)
-
-    
-    # a, b = 0, 0
     if flag_plot==True:
         for file in data_list:
             data_name = file[len_path:len(file)-len_extension]
@@ -59,13 +36,16 @@ def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max
     
     return prediction_num
 
-
-
-def screening(model_path, output_path, patterns, xaxis_min, xaxis_max, xaxis_step, expt_data_path, extension):
+def screening(path_model, output_path, patterns, xaxis_min, xaxis_max, xaxis_step, expt_data_path, extension):
     len_path = len(expt_data_path)
     len_extension = len(extension)
 
-    model = tf.keras.models.load_model(model_path, compile = False)
+    tf.keras.backend.clear_session()
+    try:
+       model = tf.keras.models.load_model(path_model, compile = False)
+    except OSError:
+       print("Failed to load model.")
+       sys.exit()
     name_max_len = 0
     prediction_results = {
                         "Sample_Name": [],  # Sample Name
