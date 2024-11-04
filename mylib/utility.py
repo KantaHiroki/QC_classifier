@@ -3,7 +3,9 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-
+import glob
+import tqdm
+import pandas as pd
 
 def data_compensate(tth_list, Intensity_list, tth_interval):
     tth_len = 6000
@@ -304,3 +306,40 @@ def save_16plots(intensity_list, outputDir):
   except:
     pass
   return
+
+def generate_prediction_results(data, filename="prediction_results.csv"):
+    # Normalize probabilities so they sum up to 1 for each sample
+    for i in range(len(data["Sample_Name"])):
+        total_prob = data["iQC"][i] + data["1/1AC"][i] + data["2/1AC"][i] + data["Others"][i]
+        data["iQC"][i] = round(data["iQC"][i] / total_prob, 4)
+        data["1/1AC"][i] = round(data["1/1AC"][i] / total_prob, 4)
+        data["2/1AC"][i] = round(data["2/1AC"][i] / total_prob, 4)
+        data["Others"][i] = round(data["Others"][i] / total_prob, 4)
+
+    # Organize data as a DataFrame
+    df = pd.DataFrame(data)
+
+    # Get the class with the highest probability and the class with the second highest probability
+    prob_columns = ["iQC", "1/1AC", "2/1AC", "Others"]
+    class_labels = ["iQC", "1/1AC", "2/1AC", "Others"]
+
+    df['Top_Class'] = df[prob_columns].idxmax(axis=1).apply(lambda x: x.replace("Prob_", ""))
+    df['Second_Top_Class'] = df[prob_columns].apply(
+        lambda row: class_labels[np.argsort(row.values)[-2]], axis=1
+    )
+
+    # Create a remark column: mark samples where the second highest probability is >= 0.3
+    df['Second_Top_Prob'] = df[prob_columns].apply(lambda row: sorted(row, reverse=True)[1], axis=1)
+    df['Remark'] = df['Second_Top_Prob'].apply(lambda x: "High Second Prediction" if x >= 0.3 else "")
+
+    # Display selected columns only
+    df = df[[
+        "Sample_Name", "Predicted_Label",
+        "iQC", "1/1AC", "2/1AC", "Others",
+        "Second_Top_Class", "Remark"
+    ]]
+
+    print(df)
+    # Save the DataFrame to a CSV file
+    df.to_csv(filename, index=False)
+    print(f"Data saved to {filename}")
