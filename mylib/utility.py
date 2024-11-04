@@ -1,3 +1,5 @@
+# 20241021 K. Hiroki
+
 import codecs
 import numpy as np
 import tensorflow as tf
