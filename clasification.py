@@ -11,12 +11,12 @@ from mylib import utility
 
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
-def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max, xaxis_step, flag_plot):
+def run(path_model, expt_data_path, output_path, extension='.txt', xaxis_min=20.0, xaxis_max=80.0, xaxis_step=0.01, flag_plot=False):
     """
-    run model evaluation using synthetic datasets 
+    run model screening
     """
 
-    data_list = utility.data_download(expt_data_path, extension)
+    data_list = utility.data_download(expt_data_path, extension, xaxis_min, xaxis_max, xaxis_step)
 
     file_path = expt_data_path+'/XRD_plot'
     if os.path.isdir('%s'%(file_path))==False:
@@ -25,7 +25,7 @@ def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max
     len_path = len(expt_data_path)
     len_extension = len(extension)
     
-    prediction_num = screening(path_model, output_path, data_list, xaxis_min, xaxis_max, xaxis_step, expt_data_path, extension)
+    prediction_num = screening(path_model, output_path, data_list, expt_data_path, extension)
     
     if flag_plot==True:
         for file in data_list:
@@ -33,10 +33,9 @@ def run(path_model, expt_data_path, extension, output_path, xaxis_min, xaxis_max
             utility.show_fig(file, xaxis_min, xaxis_max, xaxis_step, data_list[file][0], file_path+'/'+data_name+'.png', 'tth')
     else:
         pass
-    
     return prediction_num
 
-def screening(path_model, output_path, patterns, xaxis_min, xaxis_max, xaxis_step, expt_data_path, extension):
+def screening(path_model, output_path, patterns, expt_data_path, extension):
     len_path = len(expt_data_path)
     len_extension = len(extension)
 
@@ -83,19 +82,11 @@ def screening(path_model, output_path, patterns, xaxis_min, xaxis_max, xaxis_ste
     return
 
 
-    
 if __name__ == '__main__':
     ###結果の保存先の変更を忘れずに###    
     path_model = './models/tth/QC_11AC_21AC_Others/single_multi_GAN/iQC1_11AC1_21AC1_Others1_tuninged/TrainData600000/S_hwhm001-01/s4-m5-G1/aico4-6_HWHM30-300/4.0_6.0__15__256'
 
     expt_data_path = {'unknown': './data/fujino/20240908/'}
-    
-    expt_data_path = {'iQC': './data/experimental_evaluation_dataset/iQC/',
-                    '11AC': './data/experimental_evaluation_dataset/AC11/',
-                    '21AC': './data/experimental_evaluation_dataset/AC21/',
-                    'Others': './data/experimental_evaluation_dataset/Others/'
-                    }
-
     extension = '.txt'
     
     xaxis_min = 20.0
@@ -103,12 +94,11 @@ if __name__ == '__main__':
     xaxis_step = 0.01
 
     xrd_plot = True
-    prediction_num = []
     for label in expt_data_path:
         output_dir = expt_data_path[label]+'/screening_result'
         if os.path.isdir('%s'%(output_dir))==False:
             os.mkdir('%s'%(output_dir))
-        output_path = output_dir + '/screening_'+label+'_data_result_S_hwhm001-01_s4-m5-G1model.csv'
+        output_path = output_dir + '/screening_'+label+'_data_result_Tsai-type_iQC_model.csv'
 
-        print('-'*40,'Screening',label,'-'*40)
-        prediction_num.append(run(path_model, expt_data_path[label], extension, output_path, xaxis_min, xaxis_max, xaxis_step, xrd_plot))
+        print('-'*40,'Screening',label,'data (',expt_data_path[label],')','-'*40)
+        run(path_model, expt_data_path[label], output_path, extension, xaxis_min, xaxis_max, xaxis_step, xrd_plot)
